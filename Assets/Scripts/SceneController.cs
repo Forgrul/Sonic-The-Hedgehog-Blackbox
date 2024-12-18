@@ -65,24 +65,24 @@ namespace Giometric.UniSonic
 
         private void FixedUpdate()
         {
-            if (debugQuickAccelerate)
-            {
-                if (playerCharacter != null && !playerCharacter.IsSpinDashing)
-                {
-                    if (playerCharacter.Grounded)
-                    {
-                        float acceleration = playerCharacter.CurrentMovementSettings.GroundAcceleration * quickAccelerateMultiplier;
-                        playerCharacter.GroundSpeed = Mathf.Clamp(playerCharacter.GroundSpeed + (playerCharacter.FacingDirection * acceleration) * Time.deltaTime, -playerCharacter.GlobalSpeedLimit, playerCharacter.GlobalSpeedLimit);
-                    }
-                    else
-                    {
-                        float acceleration = playerCharacter.CurrentMovementSettings.AirAcceleration * quickAccelerateMultiplier;
-                        Vector2 newVelocity = playerCharacter.Velocity;
-                        newVelocity.x = Mathf.Clamp(newVelocity.x + (playerCharacter.FacingDirection * acceleration) * Time.deltaTime, -playerCharacter.GlobalSpeedLimit, playerCharacter.GlobalSpeedLimit);
-                        playerCharacter.Velocity = newVelocity;
-                    }
-                }
-            }
+            // if (debugQuickAccelerate)
+            // {
+            //     if (playerCharacter != null && !playerCharacter.IsSpinDashing)
+            //     {
+            //         if (playerCharacter.Grounded)
+            //         {
+            //             float acceleration = playerCharacter.CurrentMovementSettings.GroundAcceleration * quickAccelerateMultiplier;
+            //             playerCharacter.GroundSpeed = Mathf.Clamp(playerCharacter.GroundSpeed + (playerCharacter.FacingDirection * acceleration) * Time.deltaTime, -playerCharacter.GlobalSpeedLimit, playerCharacter.GlobalSpeedLimit);
+            //         }
+            //         else
+            //         {
+            //             float acceleration = playerCharacter.CurrentMovementSettings.AirAcceleration * quickAccelerateMultiplier;
+            //             Vector2 newVelocity = playerCharacter.Velocity;
+            //             newVelocity.x = Mathf.Clamp(newVelocity.x + (playerCharacter.FacingDirection * acceleration) * Time.deltaTime, -playerCharacter.GlobalSpeedLimit, playerCharacter.GlobalSpeedLimit);
+            //             playerCharacter.Velocity = newVelocity;
+            //         }
+            //     }
+            // }
         }
     }
 }

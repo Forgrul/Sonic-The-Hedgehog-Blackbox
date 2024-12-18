@@ -10,25 +10,46 @@ public class BossAttackController : MonoBehaviour
     [SerializeField]
     private float spawnOffset = 20f;
 
+    [SerializeField] 
+    private float attackInterval = 3f;
+
+    private float attackTimer;
+    private bool stop = false;
+
+    void Start()
+    {
+        attackTimer = attackInterval;
+    }
+
     // Update is called once per frame
     void Update()
     {
+        if(stop) return;
         Vector3 mousePos = Input.mousePosition;
         Vector3 mousePosWorld = Camera.main.ScreenToWorldPoint(mousePos);
-        if(Input.GetKeyDown(KeyCode.Mouse0))
+        attackTimer -= Time.deltaTime;
+        if(attackTimer < 0f)
+        {
+            attackTimer = attackInterval;
             Shoot(mousePosWorld);
+        }
     }
 
     void Shoot(Vector3 position)
     {
         Vector3 direction = position - transform.position;
-        Vector3 direction2d = direction;
-        direction2d = direction2d.normalized;
+        direction.z = 0f;
+        direction = direction.normalized;
 
-        float angle = Mathf.Atan2(direction2d.y, direction2d.x);
+        float angle = Mathf.Atan2(direction.y, direction.x);
 
-        GameObject bullet = Instantiate(bulletPrefab, transform.position + direction2d * spawnOffset, Quaternion.Euler(0, 0, angle));
+        GameObject bullet = Instantiate(bulletPrefab, transform.position + direction * spawnOffset, Quaternion.Euler(0, 0, angle));
         Bullet bulletScript = bullet.GetComponent<Bullet>();
-        bulletScript.SetDirection(direction2d);
+        bulletScript.SetDirection(direction);
+    }
+
+    public void StopAttacking()
+    {
+        stop = true;
     }
 }

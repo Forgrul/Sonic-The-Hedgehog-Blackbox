@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
 using Giometric.UniSonic.Objects;
 
@@ -17,6 +18,7 @@ namespace Giometric.UniSonic.Enemies
         [SerializeField]
         [Tooltip("How many hits it takes for the player to destroy this enemy.")]
         private int health = 10;
+        private int currentHealth;
 
         [SerializeField]
         private FacingDirection facingDirection = FacingDirection.Right;
@@ -39,8 +41,20 @@ namespace Giometric.UniSonic.Enemies
         [SerializeField]
         private ObjectTriggerBase hitbox;
 
+        [SerializeField]
+        private Slider healthBar;
+
+        [SerializeField]
+        private Sprite explodedSprite;
+
         private float waitTimer = 0f;
         private float moveTimer;
+
+        private SpriteRenderer spriteRenderer;
+
+        private Animator anim;
+        private bool dead = false;
+        private bool nigerundayo = false;
 
         private void Awake()
         {
@@ -49,10 +63,18 @@ namespace Giometric.UniSonic.Enemies
                 hitbox.PlayerEnteredTrigger.AddListener(OnPlayerEnteredTrigger);
             }
             moveTimer = moveTime;
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            currentHealth = health;
+            anim = GetComponentInChildren<Animator>();
+            UpdateHealthBar();
         }
 
         private void FixedUpdate()
         {
+            if(nigerundayo)
+                Nigeru();
+
+            if(dead) return;
             float deltaTime = Time.fixedDeltaTime;
             Vector3 newPos = transform.position;
 
@@ -96,7 +118,6 @@ namespace Giometric.UniSonic.Enemies
                 if (!player.Grounded)
                 {
                     Vector2 newVelocity = player.Velocity;
-                    // TODO: Move the rebound code to player movement script, or base enemy?
                     if (player.transform.position.y < transform.position.y || player.Velocity.y > 0f)
                     {
                         newVelocity.y -= 60f * Mathf.Sign(newVelocity.y);
@@ -117,16 +138,45 @@ namespace Giometric.UniSonic.Enemies
 
         private void TakeDamage(int amount)
         {
-            health -= amount;
-            if (health <= 0)
+            spriteRenderer.color = Color.red;
+            Invoke(nameof(ResetColor), 0.1f);
+
+            currentHealth -= amount;
+            UpdateHealthBar();
+            if (currentHealth == 0)
             {
-                Die();
+                StartCoroutine(Die());
             }
         }
 
-        private void Die()
+        private void ResetColor()
         {
-            Destroy(gameObject);
+            spriteRenderer.color = Color.white;
+        }
+
+        private void UpdateHealthBar()
+        {
+            healthBar.value = (float)currentHealth / (float)health;
+        }
+
+        private IEnumerator Die()
+        {
+            dead = true;
+            anim.SetTrigger("Die");
+            GetComponent<BossAttackController>().StopAttacking();
+
+            yield return new WaitForSeconds(2f);
+            spriteRenderer.sprite = explodedSprite;
+            yield return new WaitForSeconds(1f);
+            nigerundayo = true;
+        }
+
+        private void Nigeru()
+        {
+            sprite.flipX = true;
+            Vector3 newPos = transform.position;
+            newPos.x += moveSpeed * 2f * Time.fixedDeltaTime;
+            transform.position = newPos;
         }
     }
 }
