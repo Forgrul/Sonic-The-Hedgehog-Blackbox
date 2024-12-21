@@ -79,8 +79,9 @@ def send_shooting_data():
         print(f"Sent Shooting: [1, {dir}]")
         sleep(1)  # Optional: wait a bit before sending the next message
 
+
+# Call the function to send the data
 while(1):
-    # Call the function to send the data
     send_position_data()
     client.send_message("/action", [0, 0.5, 0.5])
     send_shooting_data()
