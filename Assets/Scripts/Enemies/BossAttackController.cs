@@ -16,6 +16,9 @@ public class BossAttackController : MonoBehaviour
     private float attackTimer;
     private bool stop = false;
 
+    [SerializeField]
+    private Transform sonicTransform; // Sonic的Transform
+
     void Start()
     {
         attackTimer = attackInterval;
@@ -31,17 +34,27 @@ public class BossAttackController : MonoBehaviour
         if(attackTimer < 0f)
         {
             attackTimer = attackInterval;
-            Shoot(mousePosWorld);
+            // Shoot(mousePosWorld);
+            Shoot(sonicTransform.position);
         }
     }
 
     void Shoot(Vector3 position)
     {
+        // Vector3 direction = position - transform.position;
+        // direction.z = 0f;
+        // direction = direction.normalized;
+
+        // float angle = Mathf.Atan2(direction.y, direction.x);
+
+        // GameObject bullet = Instantiate(bulletPrefab, transform.position + direction * spawnOffset, Quaternion.Euler(0, 0, angle));
+        // Bullet bulletScript = bullet.GetComponent<Bullet>();
+        // bulletScript.SetDirection(direction);
         Vector3 direction = position - transform.position;
         direction.z = 0f;
         direction = direction.normalized;
 
-        float angle = Mathf.Atan2(direction.y, direction.x);
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
 
         GameObject bullet = Instantiate(bulletPrefab, transform.position + direction * spawnOffset, Quaternion.Euler(0, 0, angle));
         Bullet bulletScript = bullet.GetComponent<Bullet>();

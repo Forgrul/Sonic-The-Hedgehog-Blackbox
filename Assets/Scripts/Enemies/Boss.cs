@@ -69,6 +69,10 @@ namespace Giometric.UniSonic.Enemies
             UpdateHealthBar();
         }
 
+        public int GetCurrentHealth() {
+            return currentHealth;
+        }
+
         private void FixedUpdate()
         {
             if(nigerundayo)

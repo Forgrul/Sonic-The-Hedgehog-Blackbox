@@ -370,6 +370,7 @@ namespace Giometric.UniSonic
         private int spinDashHash;
         private int spinDashEndHash;
         private int ledgeHash;
+        public int health = 7;
 
         /// <Summary>
         /// Reset velocity and other movement state.
@@ -561,6 +562,7 @@ namespace Giometric.UniSonic
             {
                 ScatterRingController.Instance.ScatterRings(transform.position, FacingDirection, rings, CurrentGroundMask);
                 rings = 0;
+                health -= 1;
             }
             IsHit = true;
             postHitInvulnerabilityTimer = 0f;
