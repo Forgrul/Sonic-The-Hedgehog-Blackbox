@@ -1,5 +1,5 @@
 // timer
-int interval = 500;
+int interval = 300;
 int sensitivity = 50;
 int lastRecordedTime = 0;
 int lastRecordedTimeFollow = 0;
@@ -13,7 +13,6 @@ float probabilityOfAliveAtStart = 0.4;
 int round = 0;
 int roundShooting = 0;
 static int raySpeed = 10;
-//boolean shoot = true;
 static int shootingSpeed = 40;
 int shootingTimer = width/cellSize;
 int curDir = -1;
@@ -47,9 +46,6 @@ class ImageObject{
   }
 }
 
-//TODO: dot moving aiming (ok)
-//TODO: lazer animation (ok)
-//TODO: other decoration (ok)
 int[][] cells; 
 int[][] cellsBuffer; 
 
@@ -84,7 +80,7 @@ void shootRay(int dir){
 }
 
 void lightRay(){
-  round = (round + 1) % raySpeed;
+  round++;
   for (int x=0; x<width/cellSize; x++) {
     for (int y=0; y<height/cellSize; y++) {
       if(abs(x - curCenterX) < threshold && (abs(y - curCenterY) + round) % raySpeed > 2){
@@ -96,6 +92,7 @@ void lightRay(){
     }
   }
 }
+
 void follow(){
   int radius = 7; // Radius of the circle in cells
   for (int x = 0; x < width / cellSize; x++) {
@@ -112,10 +109,10 @@ void follow(){
     }
   }
 
-  curCenterX = constrain(mouseX / cellSize, 1, width / cellSize - 2);
-  curCenterY = constrain(mouseY / cellSize, 1, height / cellSize - 2);
+  curCenterX = constrain(mouseX / cellSize, 1, width / cellSize - 2); //TO RECEIVE
+  curCenterY = constrain(mouseY / cellSize, 1, height / cellSize - 2); //TO RECIEVE
   lightRay();
-  if(mousePressed && curDir == -1){ //shoot
+  if(mousePressed && curDir == -1){ //shoot time and direction; TO RECEIVE
     shootingTimer = 0;
     roundShooting = 0;
     curDir = (int)random(4);
@@ -130,7 +127,9 @@ void follow(){
     if(shootingTimer == shootingTimerThreshold)
       curDir = -1;
   }
+  //drawing center
   cells[curCenterX][curCenterY] = 2;
+  //drawing target sign
   for (int x = 0; x < width / cellSize; x++) {
     for (int y = 0; y < height / cellSize; y++) {
       int dx = x - curCenterX;
@@ -149,12 +148,23 @@ void fillgrid(){
   for (int x=0; x<width/cellSize; x++) {
     for (int y=0; y<height/cellSize; y++) {
       if(cells[x][y] == 2) continue;
-      float state = random (100);
-      if (state > probabilityOfAliveAtStart) { 
-        cells[x][y] = 0;
-      }
-      else {
-        cells[x][y] = 1;
+      else if(cells[x][y] == 1){
+        boolean valid = false;
+        int failCnt = 0;
+        int[] dx = {-1, 0, 1, 0};
+        int[] dy = {0, -1, 0, 1};
+        while(!valid){
+          failCnt++;
+          int dir = (int)random(4);
+          int nx = x + dx[dir];
+          int ny = y + dy[dir];
+          if(nx >= 0 && nx < width/cellSize && ny >= 0 && ny < height/cellSize){
+            valid = true;
+            cells[x][y] = 0;
+            cells[nx][ny] = 1;
+          }
+          if(failCnt == 10) break;
+        }
       }
     }
   }
@@ -183,7 +193,18 @@ void setup() {
   stroke(48);
   noSmooth();
 
-  fillgrid();
+  //fillgrid();
+  for (int x=0; x<width/cellSize; x++) {
+    for (int y=0; y<height/cellSize; y++) {
+      float state = random (100);
+      if (state > probabilityOfAliveAtStart) { 
+        cells[x][y] = 0;
+      }
+      else {
+        cells[x][y] = 1;
+      }
+    }
+  }
   background(0); 
 }
 
@@ -212,7 +233,7 @@ void draw() {
       rect (x*cellSize, y*cellSize, cellSize, cellSize);
     }
   }
-  drawImage(palmTreeImg.img, width - (int)(1.1 * palmTreeImg.imgWidth * cellSize), height - (int)(1.1 * palmTreeImg.imgHeight * cellSize));
+  drawImage(palmTreeImg.img, width - (int)(1.1 * palmTreeImg.imgWidth * cellSize), height - palmTreeImg.imgHeight * cellSize);
   drawImage(flowerImg.img, (int)(0.1 * flowerImg.imgWidth * cellSize), height - (int)(1.1 * flowerImg.imgHeight * cellSize));
 
   jumpTime++;
@@ -226,16 +247,15 @@ void draw() {
     rabbitHorizontal = (int)random(width - 1.2 * rabbitImg.imgWidth);
   }
 
-  if (millis()-lastRecordedTime>interval) {
-    if (!pause) {
-      iteration();
-      lastRecordedTime = millis();
-    }
-  }
-   if (millis()-lastRecordedTimeFollow>sensitivity) {
+  if (millis()-lastRecordedTimeFollow>sensitivity) {
     if (!pause) {
       follow();
       lastRecordedTimeFollow = millis();
+    }
+  } else if (millis()-lastRecordedTime>interval) {
+    if (!pause) {
+      iteration();
+      lastRecordedTime = millis();
     }
   }
 }
