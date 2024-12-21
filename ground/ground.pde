@@ -1,21 +1,35 @@
+import oscP5.*;
+import netP5.*;
+
+OscP5 oscP5;
+NetAddress myRemoteLocation;
+
 // timer
+// TODO: align two direction speed
 int interval = 300;
 int sensitivity = 50;
 int lastRecordedTime = 0;
 int lastRecordedTimeFollow = 0;
 
 //positions
-int curCenterX = 0;
-int curCenterY = 0;
+int gridWidth = 1920;
+int gridHeight = 1080;
+int widthCellRatio = 320;
+int heightCellRatio = 180;
 float threshold = 2;
 int cellSize = 6;
 float probabilityOfAliveAtStart = 0.4;
 int round = 0;
 int roundShooting = 0;
 static int raySpeed = 10;
-static int shootingSpeed = 40;
+static int shootingSpeedHor = 40;
+static int shootingSpeedVer = (int)(40.0 / 16.0 * 9.0);
 int shootingTimer = width/cellSize;
-int curDir = -1;
+//received data
+int curCenterX;
+int curCenterY;
+boolean shoot = false;
+int receivedDir = -1;
 
 //colors
 color pink = color(214, 60, 129);
@@ -53,24 +67,28 @@ boolean pause = false;
 
 void shootRay(int dir){
   if(dir == -1) return;
+  println("shoot ray");
   //0: left-> right; 1: right->left; 2: up->down; 3: down->up
-  roundShooting += shootingSpeed;
-  if(roundShooting >= width/cellSize) roundShooting = 0;
+  //updated: 0 for upward, 1 for leftward, 2 for downward, 3 for rightward
+  if(dir == 1 || dir == 3) roundShooting += shootingSpeedHor;
+  else roundShooting += shootingSpeedVer;
+  //println(roundShooting);
+  //if(roundShooting >= width/cellSize) roundShooting = 0;
   for (int x=0; x<width/cellSize; x++) {
     for (int y=0; y<height/cellSize; y++) {
-      if(dir == 0){
+      if(dir == 1){
         if(abs(y - curCenterY) < threshold && x < roundShooting){
           cells[x][y] = 4;
         }
-      } else if(dir == 1){
+      } else if(dir == 3){
         if(abs(y - curCenterY) < threshold && (width/cellSize - x) < roundShooting){
           cells[x][y] = 4;
         }
-      } else if(dir == 2){
+      } else if(dir == 0){
         if(abs(x - curCenterX) < threshold && y < roundShooting){
           cells[x][y] = 4;
         }
-      }else{ //dir == 3
+      }else if(dir == 2){
         if(abs(x - curCenterX) < threshold && (height/cellSize - y) < roundShooting){
           cells[x][y] = 4;
         }
@@ -109,23 +127,27 @@ void follow(){
     }
   }
 
-  curCenterX = constrain(mouseX / cellSize, 1, width / cellSize - 2); //TO RECEIVE
-  curCenterY = constrain(mouseY / cellSize, 1, height / cellSize - 2); //TO RECIEVE
+  //curCenterX = constrain(mouseX / cellSize, 1, width / cellSize - 2); //TO RECEIVE
+  //curCenterY = constrain(mouseY / cellSize, 1, height / cellSize - 2); //TO RECIEVE
+  curCenterX = constrain(curCenterX, 1, width / cellSize - 2); //TO RECEIVE
+  curCenterY = constrain(curCenterY, 1, height / cellSize - 2); //TO RECIEVE
   lightRay();
-  if(mousePressed && curDir == -1){ //shoot time and direction; TO RECEIVE
+  if(shoot){ //shoot time and direction; TO RECEIVE
     shootingTimer = 0;
     roundShooting = 0;
-    curDir = (int)random(4);
+    shoot = false;
+    //curDir = (int)random(4);
   }
   int shootingTimerThreshold;
-  if(curDir == 0 || curDir == 1) shootingTimerThreshold = width/cellSize/shootingSpeed;
-  else shootingTimerThreshold = height/cellSize/shootingSpeed;
+  shootingTimerThreshold = width/cellSize/shootingSpeedHor;
   if(shootingTimer < shootingTimerThreshold){
-    shootRay(curDir);
+    shootRay(receivedDir);
     shootingTimer++;
-    roundShooting++;
-    if(shootingTimer == shootingTimerThreshold)
-      curDir = -1;
+    //roundShooting++;
+    if(shootingTimer == shootingTimerThreshold){
+      receivedDir = -1;
+      shoot = false;
+    }
   }
   //drawing center
   cells[curCenterX][curCenterY] = 2;
@@ -179,8 +201,41 @@ ImageObject createImageObj(String filename, float scale){
   return new ImageObject(img, imgWidth, imgHeight);
 }
 
+void oscEvent(OscMessage theOscMessage){
+  if (theOscMessage.checkAddrPattern("/action")) {
+    // Read the type of action (first element in the message)
+    int actionType = theOscMessage.get(0).intValue();
+    
+    if (actionType == 0) {  // Position data
+      float positionX = theOscMessage.get(1).floatValue();
+      float positionY = theOscMessage.get(2).floatValue();
+      println("Received Position Data: PositionX=" + positionX + ", PositionY=" + positionY);
+      curCenterX = (int)(width * positionX) / cellSize;
+      curCenterY = (int)(height * (1 - positionY)) / cellSize;
+      println(curCenterX, curCenterY);
+    }
+    else if (actionType == 1) {  // Shoot data
+      shoot = true;
+      receivedDir = theOscMessage.get(1).intValue();
+      println("Received Shoot Data: Direction=" + receivedDir);
+    }
+    else {
+      println("Unknown action received.");
+    }
+  }
+}
 void setup() {
-  size (1920, 1080);
+  //size(gridWidth, gridHeight);
+  size(1920, 1080); //cell: (320, 180)
+  cellSize = gridWidth / widthCellRatio;
+  println(cellSize);
+  curCenterX = 0;
+  curCenterY = gridHeight / cellSize;
+
+  //osc related
+  oscP5 = new OscP5(this, 12000);
+  myRemoteLocation = new NetAddress("127.0.0.1",12000);
+  
   cells = new int[width/cellSize][height/cellSize];
   cellsBuffer = new int[width/cellSize][height/cellSize];
 
@@ -242,18 +297,18 @@ void draw() {
 
   drawImage(rabbitImg.img, rabbitHorizontal, rabbitVertical);
 
-  if (jumpTime >= jumpDuration) {
+  if(jumpTime >= jumpDuration) {
     jumpTime = 0;//reset
     rabbitHorizontal = (int)random(width - 1.2 * rabbitImg.imgWidth);
   }
 
-  if (millis()-lastRecordedTimeFollow>sensitivity) {
-    if (!pause) {
+  if(millis()-lastRecordedTimeFollow>sensitivity) {
+    if(!pause) {
       follow();
       lastRecordedTimeFollow = millis();
     }
-  } else if (millis()-lastRecordedTime>interval) {
-    if (!pause) {
+  }else if(millis()-lastRecordedTime>interval) {
+    if(!pause) {
       iteration();
       lastRecordedTime = millis();
     }
